@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Recommender</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Иконки -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+  </head>           
+  <body class="min-h-screen bg-gray-800">
+
+    <!-- Шапка -->
+    <header class="bg-gray-800 shadow-sm">
+      <nav class="container mx-auto px-20 py-4">
+        <div class="flex items-center justify-between">
+          <a href="/" class="text-xl font-bold text-white hover:text-gray-400 px-2 py-2"> 🎬  FilmHubs</a>
+
+          <div class="flex items-center space-x-4 mr-4">
+            {% if user.is_authenticated %}
+              <span class="bg-gray-700 hover:bg-purple-800 text-gray-100 text-xl px-4 py-2 rounded-full">{{ user.username }}</span>
+              
+              <!-- Вертикальная линия -->
+              <div class="w-px h-6 bg-gray-500"></div>
+          
+              <a href="{% url 'rated_movies' %}" class="bg-gray-700 hover:bg-purple-800 text-gray-100 text-xl px-4 py-2 rounded-full">Rated</a>
+              
+              <!-- Вертикальная линия -->
+              <div class="w-px h-6 bg-gray-500"></div>
+          
+              <form method="post" action="{% url 'logout' %}" class="inline">
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  class="hover:bg-purple-800 bg-gray-700 text-xl text-gray-100 px-4 py-2 rounded-full transition">
+                  Logout
+                </button>
+              </form>
+            {% else %}
+              <a href="{% url 'login' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition">Вход</a>
+              <a href="{% url 'register' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition">Регистрация</a>
+            {% endif %}
+          </div>
+        </div>
+      </nav>
+    </header>
+    <hr class="border-t border-gray-700 mx-24 " />
+    <!-- Основной контент -->
+    <main class="container mx-auto px-4 py-4">
+      {% block content %}{% endblock %}
+    </main>
+    <footer
+    class="text-center text-gray-500 text-sm py-4 border-t border-gray-700 mt-8"
+  >
+    &copy; {{ now|date:"Y" }} FilmHubs. Все права защищены.
+  </footer>
+  </body>
+</html>
+

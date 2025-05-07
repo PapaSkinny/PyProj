@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-4">
+  <h1 class="text-3xl font-bold text-white text-center mb-6">Вход в аккаунт</h1>
+
+  <!-- Форма логина -->
+  <div class="max-w-sm mx-auto bg-gray-900 p-6 rounded-lg shadow-md">
+    <form method="POST">
+      {% csrf_token %}
+      
+      <div class="mb-4">
+        <label for="username" class="block text-sm text-gray-400 ">Логин</label>
+        <input type="text" id="username" name="username" class="w-full
+         px-4 py-2 mt-2 bg-gray-800 text-white rounded-md focus:outline-none  focus:ring-2 focus:ring-purple-500" required>
+      </div>
+      
+      <div class="mb-4">
+        <label for="password" class="block text-sm text-gray-400">Пароль</label>
+        <input type="password" id="password" name="password" class="w-full px-4 py-2 mt-2 bg-gray-800 text-white
+         rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+      </div>
+      
+      <div class="flex items-center justify-between">
+        <div>
+          <input type="checkbox" id="remember" name="remember" class="text-purple-500">
+          <label for="remember" class="text-sm text-gray-400">Запомнить меня</label>
+        </div>
+        <a href="#" class="text-sm text-purple-500 hover:underline">Забыли пароль?</a>
+      </div>
+      
+      <button type="submit" class="w-full mt-6 py-2 px-4 bg-purple-600 text-white rounded-md 
+      hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+        Войти
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+ 

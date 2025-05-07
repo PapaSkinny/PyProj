@@ -1,0 +1,38 @@
+{% extends 'core/base.html' %}
+{% block content %}
+
+<div class="container mx-auto px-20">
+
+  <!-- Фильтр -->
+  <form method="get" class="mb-8 flex flex-wrap gap-4">
+    {{ filter_form.genre }}
+    {{ filter_form.sort_by }} 
+    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+      Применить
+    </button>
+  </form>
+
+  <h1 class="text-3xl font-bold mb-8 text-white ">Оценённые фильмы</h1>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+    {% for movie in rated_movies %}
+    <div class="bg-gray-900 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+      {% if movie.poster_url %}
+      <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="w-full object-contain">
+      {% endif %}
+
+      <div class="p-4 flex-1 flex flex-col justify-between">
+        <h2 class="font-semibold text-base mb-2 text-gray-200">{{ movie.title }}</h2>
+        <div class="flex items-center justify-between text-sm text-gray-500 mb-2">
+          <span>{{ movie.release_year }}</span>
+          <span>★ {{ movie.rating|floatformat:1 }}</span>
+        </div>
+        <p class="text-yellow-400 text-sm">Ваша оценка: {{ movie.user_score }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}
