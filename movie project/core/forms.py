@@ -21,10 +21,10 @@ class RegisterForm(UserCreationForm):
 
 class MovieFilterForm(forms.Form):
     genre = forms.ModelChoiceField(
-        queryset=Genre.objects.all(),
+        queryset=Genre.objects.all().order_by('name'),
         required=False,
         empty_label='Все жанры',
-        widget=forms.Select(attrs={'class': 'bg-gray-700  text-white rounded px-4 py-2'})
+        widget=forms.Select(attrs={'class': 'bg-gray-700 rounded-xl  text-white rounded px-4 py-2'})
     )
     sort_by = forms.ChoiceField(
         choices=[
@@ -37,7 +37,7 @@ class MovieFilterForm(forms.Form):
             ('-rating', 'По рейтингу (по убыванию)')
         ],
         required=False,
-        widget=forms.Select(attrs={'class':' bg-gray-700 text-white rounded px-4 py-2'})
+        widget=forms.Select(attrs={'class':' bg-gray-700 text-white rounded-xl px-4 py-2'})
     )
 
 class RatingForm(forms.ModelForm):

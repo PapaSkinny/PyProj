@@ -12,37 +12,36 @@
       rel="stylesheet"
     />
   </head>           
-  <body class="min-h-screen bg-gray-800">
-
+  <body class="min-h-screen bg-black text-white">
+      
     <!-- Шапка -->
-    <header class="bg-gray-800 shadow-sm">
+    <header class="bg-black shadow-sm">
       <nav class="container mx-auto px-20 py-4">
         <div class="flex items-center justify-between">
-          <a href="/" class="text-xl font-bold text-white hover:text-gray-400 px-2 py-2"> 🎬  FilmHubs</a>
+          <a href="/" class="text-xl font-bold text-white px-2 py-2">🎬 PapaFilms</a>
 
           <div class="flex items-center space-x-4 mr-4">
             {% if user.is_authenticated %}
-              <span class="bg-gray-700 hover:bg-purple-800 text-gray-100 text-xl px-4 py-2 rounded-full">{{ user.username }}</span>
+              <span class="custom-btn cursor-default">{{ user.username }}</span>
               
               <!-- Вертикальная линия -->
-              <div class="w-px h-6 bg-gray-500"></div>
+              <div class="w-px h-6 bg-gray-700"></div>
           
-              <a href="{% url 'rated_movies' %}" class="bg-gray-700 hover:bg-purple-800 text-gray-100 text-xl px-4 py-2 rounded-full">Rated</a>
-              
+              <a href="{% url 'rated_movies' %}" class="custom-btn">Rated</a>
               <!-- Вертикальная линия -->
-              <div class="w-px h-6 bg-gray-500"></div>
+              <div class="w-px h-6 bg-gray-700"></div>
           
               <form method="post" action="{% url 'logout' %}" class="inline">
                 {% csrf_token %}
                 <button
                   type="submit"
-                  class="hover:bg-purple-800 bg-gray-700 text-xl text-gray-100 px-4 py-2 rounded-full transition">
-                  Logout
+                  class="custom-btn">
+                  Log out
                 </button>
               </form>
             {% else %}
-              <a href="{% url 'login' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition">Вход</a>
-              <a href="{% url 'register' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full transition">Регистрация</a>
+              <a href="{% url 'login' %}" class="custom-btn">Log in</a>
+              <a href="{% url 'register' %}" class="custom-btn">Sign in</a>
             {% endif %}
           </div>
         </div>
@@ -58,6 +57,28 @@
   >
     &copy; {{ now|date:"Y" }} FilmHubs. Все права защищены.
   </footer>
+  <style>
+    .custom-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #fff;
+      padding: 0.5rem 1.5rem;
+      border-radius: 9999px;
+      background: transparent;
+      border: none;
+      transition: background 0.2s;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .custom-btn:hover, .custom-btn:focus {
+      background: #222;
+      outline: none;
+    }
+    .custom-btn.active {
+      background: #222;
+    }
+  </style>
   </body>
 </html>
 

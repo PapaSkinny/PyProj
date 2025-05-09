@@ -2,7 +2,7 @@
 <nav class="mt-8 flex justify-center space-x-1 text-sm">
     <!-- Кнопка "Назад" -->
     {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}" 
+    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.genre %}&genre={{ request.GET.genre }}{% endif %}{% if request.GET.sort_by %}&sort_by={{ request.GET.sort_by }}{% endif %}" 
        class="px-3 py-2 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-md">←</a>
     {% else %}
     <span class="px-3 py-2 bg-gray-700 text-gray-400  cursor-not-allowed rounded-md">←</span>
@@ -14,7 +14,7 @@
             {% if num == page_obj.number %}
             <span class="px-3 py-2 bg-purple-600 shadow-md  text-gray-200 rounded-md font-bold">{{ num }}</span>
             {% else %}
-            <a href="?page={{ num }}" 
+            <a href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.genre %}&genre={{ request.GET.genre }}{% endif %}{% if request.GET.sort_by %}&sort_by={{ request.GET.sort_by }}{% endif %}" 
                class="px-3 py-2 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-md">{{ num }}</a>
             {% endif %}
         {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
@@ -24,7 +24,7 @@
 
     <!-- Кнопка "Вперёд" -->
     {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" 
+    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.genre %}&genre={{ request.GET.genre }}{% endif %}{% if request.GET.sort_by %}&sort_by={{ request.GET.sort_by }}{% endif %}" 
        class="px-3 py-2 bg-gray-700 text-gray-300  hover:bg-gray-600 rounded-md">→</a>
     {% else %}
     <span class="px-3 py-2 bg-gray-700  cursor-not-allowed rounded-md">→</span>

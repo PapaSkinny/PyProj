@@ -1,4 +1,6 @@
 {% extends 'core/base.html' %}
+{% load custom_filters %}
+
 {% block content %}
 
 <div class="container mx-auto px-20">
@@ -7,12 +9,12 @@
   <form method="get" class="mb-8 flex flex-wrap gap-4">
     {{ filter_form.genre }}
     {{ filter_form.sort_by }} 
-    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
-      Применить
+    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl">
+      Apply
     </button>
   </form>
 
-  <h1 class="text-3xl font-bold mb-8 text-white ">Оценённые фильмы</h1>
+  <h1 class="text-3xl font-bold mb-8 text-white ">Your rated movies</h1>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
     {% for movie in rated_movies %}
@@ -23,16 +25,75 @@
 
       <div class="p-4 flex-1 flex flex-col justify-between">
         <h2 class="font-semibold text-base mb-2 text-gray-200">{{ movie.title }}</h2>
-        <div class="flex items-center justify-between text-sm text-gray-500 mb-2">
-          <span>{{ movie.release_year }}</span>
-          <span>★ {{ movie.rating|floatformat:1 }}</span>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between text-sm text-gray-500">
+            <span>{{ movie.release_year }}</span>
+            <div class="flex items-center gap-1">
+              <span>★</span>
+              <span>{{ movie.rating|floatformat:1 }}</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-md text-gray-500">Your rating:</span>
+            <div class="flex items-center gap-1">
+              <span class="rating-star cursor-pointer transition-scale  duration-200 text-yellow-400 text-lg 
+              hover:scale-125 hover:text-yellow-200" 
+                    data-movie-id="{{ movie.id }}">★</span>
+              <span class="text-sky-200">{{ rating_dict|get_item:movie.pk|floatformat:1 }}</span>
+            </div>
+          </div>
         </div>
-        <p class="text-yellow-400 text-sm">Ваша оценка: {{ movie.user_score }}</p>
       </div>
     </div>
     {% endfor %}
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('rating-star')) {
+            const movieId = e.target.dataset.movieId;
+            const movieCard = e.target.closest('.bg-gray-900');
+            
+            fetch(`/remove-rating/${movieId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update star color with transition
+                    e.target.classList.remove('text-yellow-400');
+                    e.target.classList.add('text-gray-500');
+                    
+                    // Remove the movie card with a fade effect
+                    movieCard.style.transition = 'opacity 0.5s ease-out';
+                    movieCard.style.opacity = '0';
+                    setTimeout(() => {
+                        movieCard.remove();
+                        
+                        // If no movies left, show a message
+                        if (document.querySelectorAll('.bg-gray-900').length === 0) {
+                            const container = document.querySelector('.grid');
+                            const message = document.createElement('div');
+                            message.className = 'col-span-full text-center text-gray-400 text-lg py-8';
+                            message.textContent = 'No rated movies left';
+                            container.appendChild(message);
+                        }
+                    }, 500);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    });
+});
+</script>
 
 {% endblock %}

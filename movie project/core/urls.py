@@ -9,5 +9,6 @@ urlpatterns = [
     path('register/', register_view, name='register'),
     path('logout/', LogoutView.as_view(next_page='movie_list'), name='logout'),
     path('rate/<int:pk>/', views.rate_movie, name='rate_movie'),
+    path('remove-rating/<int:pk>/', views.remove_rating, name='remove_rating'),
     path('rated/', views.rated_movies_view, name='rated_movies'), 
 ]

@@ -1,18 +1,27 @@
 {% extends 'core/base.html' %}
 {% block content %}
 
-<div class="container mx-auto px-20">
+<div class="container mx-auto px-20 bg-black text-white">
 
-  <!-- Фильтр -->
-  <form method="get" class="mb-8 flex flex-wrap gap-4">
-    {{ filter_form.genre }}
-    {{ filter_form.sort_by }}
-    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-bold transition-colors duration-300 hover:scale-105
-     hover:shadow-sm ">
-      Применить
-    </button>
-  </form> 
- 
+  <!-- Search Form -->
+  <div class="flex items-center gap-4 mb-8 justify-between">
+    <form method="get" class="flex gap-2">
+      <input type="text" name="search" value="{{ request.GET.search }}" 
+             placeholder="Search movies..." 
+             class="w-64 bg-gray-800 text-white px-4 py-2 rounded-xl 
+             focus:outline-none focus:ring-2 focus:ring-purple-500
+             ring-1 ring-gray-600 h-12" />
+      <button type="submit" class="custom-btn h-12">Search</button>
+    </form>
+
+    <!-- Filter -->
+    <form method="get" class="flex flex-wrap gap-4">
+      {{ filter_form.genre }}
+      {{ filter_form.sort_by }}
+      <button type="submit" class="custom-btn h-12">Apply</button>
+    </form>
+  </div>
+
   <h1 class="text-3xl font-bold mb-8 text-white">Все фильмы</h1>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -23,37 +32,103 @@
       {% endif %}
 
       <div class="p-4 flex-1 flex flex-col justify-between">
-        <h2 class="font-semibold text-base mb-2 text-gray-200">{{ movie.title }}</h2>
+        <h2 class="font-semibold text-bases mb-2 text-gray-200">{{ movie.title }}</h2>
         <div class="flex items-center justify-between text-sm text-gray-500 mb-2">
+          <span class="text-md">★</span>
+          <span class="mr-48">{{ movie.rating|floatformat:1 }}</span>
           <span>{{ movie.release_year }}</span>
-          <span>★ {{ movie.rating|floatformat:1 }}</span>
         </div>
+        
         {% if user.is_authenticated %}
-        <form method="post" action="{% url 'rate_movie' movie.id %}">
-          {% csrf_token %}
-          <div class="flex items-center justify-between ">
-            <input type="number" name="score" min="0" max="10" step="1"
-                  value="{{ movie.user_score }}"
-                   class="bg-gray-800  text-white px-2 py-1 w-20 rounded text-sm text-center transition-colors duration-300 hover:scale-105
-                    hover:shadow-sm">
-            <button type="submit"
-                    class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded transition-colors duration-300 hover:scale-105
-                    hover:shadow-sm">
-              Оценить
-            </button>
-          </div>
-        </form>
+        <div class="rating-container " data-movie-id="{{ movie.id }}">
+          {% if movie.user_score %}
+            <div class="rated-view">
+              <span class="text-yellow-400">★</span> 
+              <span class="score ml-1">{{ movie.user_score|floatformat:1 }}</span>
+              <span class="edit-icon cursor-pointer text-gray-500 hover:text-white ml-2" onclick="toggleEditMode(this)">✎</span>
+            </div>
+            <form method="post" action="{% url 'rate_movie' movie.id %}" class="rating-form hidden">
+              {% csrf_token %}
+              <div class="flex items-center gap-2">
+                <span class="focus-score-star cursor-pointer text-md text-yellow-400">★</span>
+                <input type="number" name="score" min="0" max="10" step="0.5" value="{{ movie.user_score }}" class="score-input bg-gray-800 text-white px-2 py-1 w-16 rounded-xl text-md text-center">
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded-xl">Update</button>
+              </div>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'rate_movie' movie.id %}" class="rating-form">
+              {% csrf_token %}
+              <div class="flex items-center gap-2">
+                <span class="focus-score-star cursor-pointer text-md text-gray-300 hover:text-yellow-400">☆</span>
+                <input type="number" name="score" min="0" max="10" step="0.5" class="score-input bg-gray-800 text-white px-2 py-1 w-12 rounded-xl text-md text-center">
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded-xl">Rate</button>
+              </div>
+            </form>
+          {% endif %}
+        </div>
         {% endif %}
       </div>
     </div>
     {% endfor %}
   </div>
 
-  <!-- Пагинация -->
+  <!-- Pagination -->
   <div class="mt-8">
     {% include 'includes/pagination.html' %}
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('.rating-form');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const container = form.closest('.rating-container');
+            const movieId = container.dataset.movieId;
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    let ratedView = container.querySelector('.rated-view');
+                    if (!ratedView) {
+                        ratedView = document.createElement('div');
+                        ratedView.className = 'rated-view';
+                        ratedView.innerHTML = `<span class="text-yellow-400">★</span> <span class="score"></span> <span class="edit-icon cursor-pointer text-gray-500 hover:text-white" onclick="toggleEditMode(this)">✎</span>`;
+                        container.insertBefore(ratedView, form);
+                    }
+                    ratedView.querySelector('.score').textContent = parseFloat(data.score).toFixed(1);
+                    form.classList.add('hidden');
+                    ratedView.classList.remove('hidden');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+});
+
+function toggleEditMode(editIcon) {
+    const container = editIcon.closest('.rating-container');
+    const ratedView = container.querySelector('.rated-view');
+    const form = container.querySelector('.rating-form');
+    ratedView.classList.add('hidden');
+    form.classList.remove('hidden');
+    form.querySelector('.score-input').focus();
+}
+</script>
   
 {% endblock %}
