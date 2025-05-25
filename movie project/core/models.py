@@ -1,3 +1,4 @@
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -8,6 +9,7 @@ class Genre(models.Model):
         return self.name
 
 class Movie(models.Model):
+    tmdb_id = models.IntegerField(unique=True, null=True) 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     release_year = models.IntegerField()

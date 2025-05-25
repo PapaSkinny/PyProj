@@ -19,7 +19,7 @@ from django.urls import path, include
 
 from django.conf import settings #for debug
 from django.conf.urls.static import static
-import debug_toolbar
+
 
 
 urlpatterns = [

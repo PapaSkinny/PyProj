@@ -16,6 +16,20 @@ from django.db.models import OuterRef, Subquery, IntegerField, Value
 from django.contrib.auth.decorators import login_required
 from django.db.models import Prefetch
 
+from surprise import SVD, Dataset, Reader
+from collections import defaultdict
+import numpy as np
+import pandas as pd
+
+
+
+
+# from django.db.models import Avg, Count
+# from sklearn.metrics.pairwise import cosine_similarity
+# from django.core.cache import cache
+# import logging
+# from django.db.models import Case, When
+
 #from django.contrib.auth.forms import UserCreationForm
 
 
@@ -24,7 +38,7 @@ class MovieListView(ListView):
     template_name = 'core/movie_list.html'
     context_object_name = 'movies'
     paginate_by = 48  # По 12 фильмов на странице
-    ordering = ['-rating']  # Пример сортировки     
+    ordering = ['-rating']  # Пример сортировки     d
 
     def get_queryset(self):
         queryset = Movie.objects.all()
@@ -149,9 +163,60 @@ def remove_rating(request, pk):
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
-            'status': 'success',
+            'status': 'success',    
             'message': 'Rating removed successfully'
         })
     return redirect('movie_list')
 
+# logger = logging.getLogger(__name__)
 
+@login_required
+def recommend_view(request):
+    user = request.user
+
+    # Получаем все оценки
+    ratings = Rating.objects.all().values_list('user__id', 'movie__id', 'score')
+
+    if not ratings:
+        return render(request, 'core/recommendations.html', {
+            'recommendations': [],
+            'message': 'Нет данных для рекомендаций.'
+        })
+
+    # Обучение SVD
+    reader = Reader(rating_scale=(0, 10))
+    data = Dataset.load_from_df(
+        pd.DataFrame(ratings, columns=["userID", "itemID", "rating"]),
+        reader
+    )
+    trainset = data.build_full_trainset()
+    model = SVD()
+    model.fit(trainset)
+
+    # Фильмы, которые пользователь уже оценивал
+    rated_movie_ids = set(
+        Rating.objects.filter(user=user).values_list('movie_id', flat=True)
+    )
+
+    # Предсказания для всех фильмов, которые пользователь НЕ оценивал
+    all_movie_ids = Movie.objects.values_list('id', flat=True)
+    candidates = [mid for mid in all_movie_ids if mid not in rated_movie_ids]
+
+    predictions = []
+    for movie_id in candidates:
+        pred = model.predict(uid=user.id, iid=movie_id)
+        predictions.append((movie_id, pred.est))
+
+    # Сортировка по убыванию предсказанного рейтинга
+    predictions.sort(key=lambda x: x[1], reverse=True)
+    top_movie_ids = [pid for pid, _ in predictions[:12]]  # топ 12 рекомендаций
+
+    recommended_movies = Movie.objects.filter(id__in=top_movie_ids)
+
+    # Сохраняем порядок вручную
+    movie_order = {id_: i for i, id_ in enumerate(top_movie_ids)}
+    recommended_movies = sorted(recommended_movies, key=lambda m: movie_order[m.id])
+
+    return render(request, 'core/recommendations.html', {
+        'recommendations': recommended_movies
+    })

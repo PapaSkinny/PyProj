@@ -1,0 +1,8 @@
+movie project/core/data/ml-1m/movies.dat
+movie project/core/data/ml-1m/filtered_ratings.csv
+.vscode
+db.sqlite3
+.env
+__pycache__
+todo.txt
+movie project/core/data/ml-1m/links.csv

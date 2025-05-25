@@ -1,0 +1,28 @@
+{% extends 'core/base.html' %}
+{% load custom_filters %}
+{% block content %}
+
+<div class="container mx-auto px-20">
+  <h1 class="text-3xl font-bold mb-8 text-white">🎯 Recommendations for you</h1>
+
+  {% if recommendations %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+    {% for movie in recommendations %}
+    <div class="bg-gray-900 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+      {% if movie.poster_url %}
+      <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="w-full object-contain">
+      {% endif %}
+      <div class="p-4">
+        <h2 class="text-white font-semibold text-lg">{{ movie.title }}</h2>
+        <p class="text-sm text-gray-400">Год: {{ movie.release_year }}</p>
+        <p class="text-sm text-yellow-400">★ {{ movie.rating|floatformat:1 }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-gray-300">Нет рекомендаций 😕</p>
+  {% endif %} 
+</div>
+
+{% endblock %}

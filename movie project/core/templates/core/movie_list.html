@@ -22,13 +22,57 @@
     </form>
   </div>
 
-  <h1 class="text-3xl font-bold mb-8 text-white">Все фильмы</h1>
+  <h1 class="text-3xl font-bold mb-8 text-white">All movies</h1>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
     {% for movie in page_obj %}
     <div class="bg-gray-900 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
       {% if movie.poster_url %}
-      <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="w-full object-contain">
+      <div class="relative group">
+        <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" 
+             class="w-full object-contain transition duration-300 group-hover:filter group-hover:blur-sm">
+        <div class="absolute inset-0 bg-black bg-opacity-75 opacity-0 group-hover:opacity-100 
+                    transition duration-300 flex items-center justify-center p-4 cursor-pointer"
+             onclick="showPopup('popup-{{ movie.id }}')">
+          <div class="text-white text-center">
+            <p class="text-sm mb-2 line-clamp-3">{{ movie.description|default:"No description available" }}</p>
+            <p class="text-xs italic">
+              {% for genre in movie.genres.all %}
+                {{ genre.name }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                No genres
+              {% endfor %}
+            </p>
+          </div>
+        </div>
+      </div>
+      <!-- Popup -->
+      <div id="popup-{{ movie.id }}" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm 
+                                          hidden flex items-center justify-center z-50">
+        <div class="relative bg-gray-900 rounded-lg max-w-lg w-full mx-4 p-6">
+          <!-- Close Button -->
+          <button class="absolute top-2 right-2 text-white text-xl hover:text-gray-300"
+                  onclick="hidePopup('popup-{{ movie.id }}')">&times;</button>
+          <!-- Popup Content -->
+          <div class="relative">
+            <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" 
+                 class="w-full h-96 object-cover filter blur-sm">
+            <div class="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+              <div class="text-white text-center">
+                <h3 class="text-lg font-semibold mb-2">{{ movie.title }}</h3>
+                <p class="text-sm mb-4 max-h-40 overflow-y-auto">{{ movie.description|default:"No description available" }}</p>
+                <p class="text-xs italic">
+                  {% for genre in movie.genres.all %}
+                    {{ genre.name }}{% if not forloop.last %}, {% endif %}
+                  {% empty %}
+                    No genres
+                  {% endfor %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       {% endif %}
 
       <div class="p-4 flex-1 flex flex-col justify-between">
@@ -40,7 +84,7 @@
         </div>
         
         {% if user.is_authenticated %}
-        <div class="rating-container " data-movie-id="{{ movie.id }}">
+        <div class="rating-container" data-movie-id="{{ movie.id }}">
           {% if movie.user_score %}
             <div class="rated-view">
               <span class="text-yellow-400">★</span> 
@@ -51,7 +95,8 @@
               {% csrf_token %}
               <div class="flex items-center gap-2">
                 <span class="focus-score-star cursor-pointer text-md text-yellow-400">★</span>
-                <input type="number" name="score" min="0" max="10" step="0.5" value="{{ movie.user_score }}" class="score-input bg-gray-800 text-white px-2 py-1 w-16 rounded-xl text-md text-center">
+                <input type="number" name="score" min="0" max="10" step="0.5" value="{{ movie.user_score }}" 
+                       class="score-input bg-gray-800 text-white px-2 py-1 w-16 rounded-xl text-md text-center">
                 <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded-xl">Update</button>
               </div>
             </form>
@@ -60,7 +105,8 @@
               {% csrf_token %}
               <div class="flex items-center gap-2">
                 <span class="focus-score-star cursor-pointer text-md text-gray-300 hover:text-yellow-400">☆</span>
-                <input type="number" name="score" min="0" max="10" step="0.5" class="score-input bg-gray-800 text-white px-2 py-1 w-12 rounded-xl text-md text-center">
+                <input type="number" name="score" min="0" max="10" step="0.5" 
+                       class="score-input bg-gray-800 text-white px-2 py-1 w-12 rounded-xl text-md text-center">
                 <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-3 py-1 rounded-xl">Rate</button>
               </div>
             </form>
@@ -129,6 +175,18 @@ function toggleEditMode(editIcon) {
     form.classList.remove('hidden');
     form.querySelector('.score-input').focus();
 }
+
+function showPopup(popupId) {
+    const popup = document.getElementById(popupId);
+    popup.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+}
+
+function hidePopup(popupId) {
+    const popup = document.getElementById(popupId);
+    popup.classList.add('hidden');
+    document.body.style.overflow = 'auto'; // Restore scrolling
+}
 </script>
-  
+
 {% endblock %}
