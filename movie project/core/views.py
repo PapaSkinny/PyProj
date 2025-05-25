@@ -21,16 +21,9 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
+from django.core.cache import cache
+from sklearn.metrics.pairwise import cosine_similarity
 
-
-
-# from django.db.models import Avg, Count
-# from sklearn.metrics.pairwise import cosine_similarity
-# from django.core.cache import cache
-# import logging
-# from django.db.models import Case, When
-
-#from django.contrib.auth.forms import UserCreationForm
 
 
 class MovieListView(ListView):
@@ -152,7 +145,7 @@ def rated_movies_view(request):
 
     return render(request, 'core/rated_movies.html', {
         'rated_movies': rated_movies,
-        'rating_dict': rating_dict,  # Pass the rating dictionary to template
+        'rating_dict': rating_dict,  # Pass the rating dictionary    to template
         'filter_form': MovieFilterForm(request.GET)
     })
 
@@ -172,51 +165,81 @@ def remove_rating(request, pk):
 
 @login_required
 def recommend_view(request):
-    user = request.user
-
-    # Получаем все оценки
-    ratings = Rating.objects.all().values_list('user__id', 'movie__id', 'score')
-
-    if not ratings:
-        return render(request, 'core/recommendations.html', {
-            'recommendations': [],
-            'message': 'Нет данных для рекомендаций.'
-        })
-
-    # Обучение SVD
-    reader = Reader(rating_scale=(0, 10))
-    data = Dataset.load_from_df(
-        pd.DataFrame(ratings, columns=["userID", "itemID", "rating"]),
-        reader
+    # Load ratings
+    ratings = Rating.objects.all()
+    ratings_data = [
+        {'user_id': r.user.id, 'movie_id': r.movie.id, 'score': r.score}
+        for r in ratings
+    ]
+    
+    # Create user-movie matrix
+    ratings_df = pd.DataFrame(ratings_data)
+    pivot_table = ratings_df.pivot_table(
+        index='user_id', 
+        columns='movie_id', 
+        values='score', 
+        fill_value=0
     )
-    trainset = data.build_full_trainset()
-    model = SVD()
-    model.fit(trainset)
-
-    # Фильмы, которые пользователь уже оценивал
-    rated_movie_ids = set(
-        Rating.objects.filter(user=user).values_list('movie_id', flat=True)
-    )
-
-    # Предсказания для всех фильмов, которые пользователь НЕ оценивал
-    all_movie_ids = Movie.objects.values_list('id', flat=True)
-    candidates = [mid for mid in all_movie_ids if mid not in rated_movie_ids]
-
-    predictions = []
-    for movie_id in candidates:
-        pred = model.predict(uid=user.id, iid=movie_id)
-        predictions.append((movie_id, pred.est))
-
-    # Сортировка по убыванию предсказанного рейтинга
-    predictions.sort(key=lambda x: x[1], reverse=True)
-    top_movie_ids = [pid for pid, _ in predictions[:12]]  # топ 12 рекомендаций
-
+    
+    # Compute movie-movie similarity (cached)
+    cache_key = 'movie_similarity_matrix'
+    similarity_matrix = cache.get(cache_key)
+    if similarity_matrix is None:
+        similarity_matrix = cosine_similarity(pivot_table.T)
+        similarity_matrix = pd.DataFrame(
+            similarity_matrix, 
+            index=pivot_table.columns, 
+            columns=pivot_table.columns
+        )
+        cache.set(cache_key, similarity_matrix, timeout=86400)  # 24 hours
+    
+    # Get user's ratings
+    user_ratings = Rating.objects.filter(user=request.user).select_related('movie')
+    if not user_ratings.exists():
+        popular_movies = Movie.objects.order_by('-rating')[:12]
+        return render(request, 'core/recommendations.html', {'recommendations': popular_movies})
+    
+    # Identify dominant genres from high ratings (score >= 7)
+    high_rated = [r for r in user_ratings if r.score >= 7]
+    genre_counts = {}
+    for rating in high_rated:
+        for genre in rating.movie.genres.all():
+            genre_counts[genre.id] = genre_counts.get(genre.id, 0) + 1
+    top_genre_ids = [gid for gid, count in sorted(genre_counts.items(), key=lambda x: x[1], reverse=True)]
+    
+    # Create user rating vector
+    user_ratings_dict = {r.movie.id: r.score for r in user_ratings}
+    user_movie_ids = list(user_ratings_dict.keys())
+    
+    # Compute recommendation scores
+    scores = pd.Series(0.0, index=pivot_table.columns)
+    for movie_id in user_movie_ids:
+        if movie_id in similarity_matrix.index:
+            sim_scores = similarity_matrix[movie_id]
+            score = user_ratings_dict[movie_id]
+            scores += sim_scores * score
+    
+    # Apply genre boost
+    genre_boost = 2.0  # Boost factor for matching genres
+    for movie_id in scores.index:
+        movie = Movie.objects.get(id=movie_id)
+        movie_genre_ids = [g.id for g in movie.genres.all()]
+        if any(gid in top_genre_ids for gid in movie_genre_ids):
+            scores[movie_id] *= genre_boost
+    
+    # Remove rated movies
+    scores = scores.drop(user_movie_ids, errors='ignore')
+    
+    # Top 12 recommendations
+    top_movie_ids = scores.nlargest(30).index
     recommended_movies = Movie.objects.filter(id__in=top_movie_ids)
-
-    # Сохраняем порядок вручную
-    movie_order = {id_: i for i, id_ in enumerate(top_movie_ids)}
-    recommended_movies = sorted(recommended_movies, key=lambda m: movie_order[m.id])
-
+    movie_scores = {movie_id: scores[movie_id] for movie_id in top_movie_ids}
+    recommended_movies = sorted(
+        recommended_movies, 
+        key=lambda x: movie_scores.get(x.id, 0), 
+        reverse=True
+    )
+    
     return render(request, 'core/recommendations.html', {
         'recommendations': recommended_movies
     })
